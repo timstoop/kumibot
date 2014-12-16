@@ -29,7 +29,7 @@ To run the script:
 
 # twisted imports
 from twisted.words.protocols import irc
-from twisted.internet import reactor, protocol
+from twisted.internet import reactor, protocol, defer
 from twisted.python import log
 
 # system imports
@@ -55,10 +55,11 @@ class MessageLogger:
         self.file.close()
 
 
-class LogBot(irc.IRCClient):
-    """A logging IRC bot."""
+class QuestBot(irc.IRCClient):
+    """An IRC bot that implements questing."""
 
-    nickname = "twistedbot"
+    nickname = "RPGbot"
+    channel = {}
 
     def connectionMade(self):
         irc.IRCClient.connectionMade(self)
@@ -81,6 +82,7 @@ class LogBot(irc.IRCClient):
     def joined(self, channel):
         """This will get called when the bot joins the channel."""
         self.logger.log("[I have joined %s]" % channel)
+        self.names(channel).addCallback(self._log_channel_users)
 
     def privmsg(self, user, channel, msg):
         """This will get called when the bot receives a message."""
@@ -104,6 +106,18 @@ class LogBot(irc.IRCClient):
         user = user.split('!', 1)[0]
         self.logger.log("* %s %s" % (user, msg))
 
+    # irc commands
+
+    def names(self, channel):
+        channel = channel.lower()
+        d = defer.Deferred()
+        if channel not in self.channel:
+            self.channel[channel] = {}
+        self.channel[channel]['namecallback'] = d
+        self.channel[channel]['users'] = []
+        self.sendLine("NAMES %s" % channel)
+        return d
+
     # irc callbacks
 
     def irc_NICK(self, prefix, params):
@@ -111,6 +125,28 @@ class LogBot(irc.IRCClient):
         old_nick = prefix.split('!')[0]
         new_nick = params[0]
         self.logger.log("%s is now known as %s" % (old_nick, new_nick))
+
+    def irc_RPL_NAMREPLY(self, prefix, params):
+        channel = params[2].lower()
+        nicklist = params[3].split(' ')
+
+        if channel not in self.channel:
+            return
+
+        n = self.channel[channel]['users']
+        n += nicklist
+
+    def irc_RPL_ENDOFNAMES(self, prefix, params):
+        channel = params[1].lower()
+
+        if (channel not in self.channel) or ('namecallback' not in
+                                             self.channel[channel]):
+            return
+
+        names = self.channel[channel]['users']
+        self.channel[channel]['namecallback'].callback(names)
+
+        del self.channel[channel]['namecallback']
 
     # For fun, override the method that determines how a nickname is changed on
     # collisions. The default method appends an underscore.
@@ -121,8 +157,16 @@ class LogBot(irc.IRCClient):
         """
         return nickname + '^'
 
+    # Helper functions
 
-class LogBotFactory(protocol.ClientFactory):
+    def _log_error(self, msg):
+        self.logger.log("Something went wrong: %s" % msg)
+
+    def _log_channel_users(self, users):
+        self.logger.log("Users in channel: %s" % users)
+
+
+class QuestBotFactory(protocol.ClientFactory):
     """A factory for LogBots.
 
     A new protocol instance will be created each time we connect to the server.
@@ -133,7 +177,7 @@ class LogBotFactory(protocol.ClientFactory):
         self.filename = filename
 
     def buildProtocol(self, addr):
-        p = LogBot()
+        p = QuestBot()
         p.factory = self
         return p
 
@@ -151,7 +195,7 @@ if __name__ == '__main__':
     log.startLogging(sys.stdout)
 
     # create factory protocol and application
-    f = LogBotFactory(sys.argv[1], sys.argv[2])
+    f = QuestBotFactory(sys.argv[1], sys.argv[2])
 
     # connect factory to this host and port
     reactor.connectTCP("irc.kumina.nl", 6667, f)
