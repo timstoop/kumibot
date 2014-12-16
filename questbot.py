@@ -3,6 +3,9 @@ from twisted.words.protocols import irc
 from twisted.internet import reactor, protocol, defer
 from twisted.python import log
 
+# local imports
+from quest import Quest
+
 # system imports
 import time
 import sys
@@ -55,7 +58,8 @@ class QuestBot(irc.IRCClient):
     def joined(self, channel):
         """This will get called when the bot joins the channel."""
         self.logger.log("[I have joined %s]" % channel)
-        self.names(channel).addCallback(self._log_channel_users)
+        self.names(channel).addCallback(self._log_channel_users).addCallback(
+            self.init_quest, channel=channel)
 
     def privmsg(self, user, channel, msg):
         """This will get called when the bot receives a message."""
@@ -121,6 +125,15 @@ class QuestBot(irc.IRCClient):
 
         del self.channel[channel]['namecallback']
 
+    # Bot functionality
+
+    def init_quest(self, users, channel):
+        q = Quest(self.logger)
+        for user in users:
+            if user == self.nickname:
+                continue
+            q.create_user(user)
+
     # Helper functions
 
     def _log_error(self, msg):
@@ -128,6 +141,7 @@ class QuestBot(irc.IRCClient):
 
     def _log_channel_users(self, users):
         self.logger.log("Users in channel: %s" % users)
+        return users
 
 
 class QuestBotFactory(protocol.ClientFactory):
