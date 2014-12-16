@@ -22,8 +22,8 @@ class MessageLogger:
     def log(self, message):
         """Write a message to the file."""
         timestamp = time.strftime("[%H:%M:%S]", time.localtime(time.time()))
-        message = '%s %s' % (timestamp, message)
-        self.file.write(message + "\n")
+        msg = '%s %s\n' % (timestamp, message)
+        self.file.write(msg)
         self.file.flush()
         log.msg(message)
 
@@ -145,7 +145,7 @@ class QuestBot(irc.IRCClient):
 
 
 class QuestBotFactory(protocol.ClientFactory):
-    """A factory for LogBots.
+    """A factory for QuestBots.
 
     A new protocol instance will be created each time we connect to the server.
     """
