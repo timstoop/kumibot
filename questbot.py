@@ -1,32 +1,3 @@
-# Copyright (c) Twisted Matrix Laboratories.
-# See LICENSE for details.
-
-
-"""
-An example IRC log bot - logs a channel's events to a file.
-
-If someone says the bot's name in the channel followed by a ':',
-e.g.
-
-    <foo> logbot: hello!
-
-the bot will reply:
-
-    <logbot> foo: I am a log bot
-
-Run this script with two arguments, the channel name the bot should
-connect to, and file to log to, e.g.:
-
-    $ python ircLogBot.py test test.log
-
-will log channel #test to the file 'test.log'.
-
-To run the script:
-
-    $ python ircLogBot.py <channel> <file>
-"""
-
-
 # twisted imports
 from twisted.words.protocols import irc
 from twisted.internet import reactor, protocol, defer
