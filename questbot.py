@@ -33,7 +33,8 @@ from twisted.internet import reactor, protocol
 from twisted.python import log
 
 # system imports
-import time, sys
+import time
+import sys
 
 
 class MessageLogger:
@@ -70,7 +71,6 @@ class LogBot(irc.IRCClient):
         self.logger.log("[disconnected at %s]" %
                         time.asctime(time.localtime(time.time())))
         self.logger.close()
-
 
     # callbacks for events
 
@@ -112,7 +112,6 @@ class LogBot(irc.IRCClient):
         new_nick = params[0]
         self.logger.log("%s is now known as %s" % (old_nick, new_nick))
 
-
     # For fun, override the method that determines how a nickname is changed on
     # collisions. The default method appends an underscore.
     def alterCollidedNick(self, nickname):
@@ -121,7 +120,6 @@ class LogBot(irc.IRCClient):
         effort to create an unused related name for subsequent registration.
         """
         return nickname + '^'
-
 
 
 class LogBotFactory(protocol.ClientFactory):
