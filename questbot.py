@@ -119,15 +119,6 @@ class QuestBot(irc.IRCClient):
 
         del self.channel[channel]['namecallback']
 
-    # For fun, override the method that determines how a nickname is changed on
-    # collisions. The default method appends an underscore.
-    def alterCollidedNick(self, nickname):
-        """
-        Generate an altered version of a nickname that caused a collision in an
-        effort to create an unused related name for subsequent registration.
-        """
-        return nickname + '^'
-
     # Helper functions
 
     def _log_error(self, msg):
