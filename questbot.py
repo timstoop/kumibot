@@ -19,8 +19,10 @@ class MessageLogger:
     def log(self, message):
         """Write a message to the file."""
         timestamp = time.strftime("[%H:%M:%S]", time.localtime(time.time()))
-        self.file.write('%s %s\n' % (timestamp, message))
+        message = '%s %s' % (timestamp, message)
+        self.file.write(message + "\n")
         self.file.flush()
+        log.msg(message)
 
     def close(self):
         self.file.close()
