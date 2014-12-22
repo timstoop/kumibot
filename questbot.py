@@ -64,19 +64,20 @@ class QuestBot(irc.IRCClient):
     def privmsg(self, user, channel, msg):
         """This will get called when the bot receives a message."""
         user = user.split('!', 1)[0]
-        self.logger.log("<%s> %s" % (user, msg))
 
         # Check to see if they're sending me a private message
         if channel == self.nickname:
-            msg = "It isn't nice to whisper!  Play nice with the group."
-            self.msg(user, msg)
+            self.logger.log(">%s< %s" % (user, msg))
+            self.handle_query(user, msg)
+            # Make sure we return asap
             return
 
         # Otherwise check to see if it is a message directed at me
         if msg.startswith(self.nickname + ":"):
-            msg = "%s: I am a log bot" % user
-            self.msg(channel, msg)
-            self.logger.log("<%s> %s" % (self.nickname, msg))
+            self.logger.log("<%s> %s" % (user, msg))
+            reply = "%s: I am a log bot" % user
+            self.msg(channel, reply)
+            self.logger.log("<%s> %s" % (self.nickname, reply))
 
     def action(self, user, channel, msg):
         """This will get called when the bot sees someone do an action."""
@@ -133,6 +134,14 @@ class QuestBot(irc.IRCClient):
             if user == self.nickname:
                 continue
             q.create_user(user)
+
+    def handle_query(self, user, msg):
+        if msg.startswith('help'):
+            with open('help/help.txt', 'r') as helpfile:
+                for line in helpfile:
+                    self.msg(user, line)
+        else:
+            self.msg(user, "Sorry, I don't get what you want. Try 'help'.")
 
     # Helper functions
 
