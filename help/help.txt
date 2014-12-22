@@ -1,4 +1,8 @@
 Hi, I'm a bot. But I guess you already knew that.
 .
+I'm used as an idle Quest bot. If you stay idle in this channel, all kind of RPG related events
+will take place. First of all, you'll start questing and leveling. Just wait and see, it'll
+happen all by itself!
+.
 Currently, there's not really a lot I can do, but I'm being expanded! I'll be able to do some
 useful stuff before long!
