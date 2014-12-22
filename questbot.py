@@ -70,6 +70,7 @@ class QuestBot(irc.IRCClient):
             self.logger.log(">%s< %s" % (user, msg))
             self.handle_query(user, msg)
             # Make sure we return asap
+            self.logger.log(">%s< answer returned." % (self.nickname))
             return
 
         # Otherwise check to see if it is a message directed at me
