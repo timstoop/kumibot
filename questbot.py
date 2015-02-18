@@ -15,7 +15,7 @@ import logging
 class QuestBot(irc.IRCClient):
     """An IRC bot that implements questing."""
 
-    nickname = "RPGbot"
+    nickname = "kumina"
     channel = {}
 
     def connectionMade(self):
@@ -51,6 +51,9 @@ class QuestBot(irc.IRCClient):
             # Make sure we return asap
             log.msg(">%s< answer returned." % (self.nickname))
             return
+
+        if channel in self.channel:
+            log.msg("%s <%s> %s" % (channel, user, msg))
 
         # Otherwise check to see if it is a message directed at me
         if msg.startswith(self.nickname + ":"):
