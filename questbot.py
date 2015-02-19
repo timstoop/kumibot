@@ -189,6 +189,8 @@ class QuestBotFactory(protocol.ClientFactory):
 
 if __name__ == '__main__':
     channel = sys.argv[1]
+    if channel[0] != '#':
+        channel = "#%s" % channel
     logfile = sys.argv[2]
     # initialize logging, we use the default logging module, but want to allow
     # twisted to write there as well. Found the solution on their own page:
