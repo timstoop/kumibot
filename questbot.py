@@ -106,6 +106,34 @@ class QuestBot(irc.IRCClient):
 
         del self.channel[channel]['namecallback']
 
+    def irc_RPL_WHOISUSER(self, prefix, params):
+        log.msg("Received response to whois on %s: %s" % (prefix, params))
+
+    def irc_RPL_WHOISSERVER(self, prefix, params):
+        # We ignore this, since it's not important
+        pass
+
+    def irc_RPL_WHOISCHANNELS(self, prefix, params):
+        # We ignore this, since it's not important
+        pass
+
+    def irc_RPL_WHOISIDLE(self, prefix, params):
+        # We ignore this, since it's not important
+        pass
+
+    def irc_RPL_ENDOFWHOIS(self, prefix, params):
+        # We ignore this, since it's not important
+        pass
+
+    def irc_PONG(self, prefix, params):
+        # Let's ignore this for now.
+        pass
+
+    def irc_unknown(self, prefix, command, params):
+        # Log all server responses that we do not handle correctly.
+        log.msg("Received a response from %s to the command '%s': %s" %
+                (prefix, command, params))
+
     def userJoined(self, user, channel):
         log.msg("User '%s' joined channel '%s'." % (user, channel))
         self.quest.create_user(user)
@@ -146,6 +174,9 @@ class QuestBot(irc.IRCClient):
         with open('help/help.txt', 'r') as helpfile:
             for line in helpfile:
                 self.msg(user, line)
+
+    def handle_cmd_whoami(self, user, msg):
+        pass
 
     def handle_pubcmd_help(self, channel, user, msg):
         # Return helpful information, but do it in a query
