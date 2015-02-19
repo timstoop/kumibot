@@ -123,11 +123,12 @@ class QuestBot(irc.IRCClient):
 
     def irc_RPL_ENDOFWHOIS(self, prefix, params):
         # We ignore this, since it's not important
-        pass
+        log.msg("WHOIS received, WHOISSERVER, WHOISCHANNELS and WHOISIDLE " +
+                "are ignored.")
 
     def irc_PONG(self, prefix, params):
         # Let's ignore this for now.
-        pass
+        log.msg('PONG from %s received.' % prefix)
 
     def irc_unknown(self, prefix, command, params):
         # Log all server responses that we do not handle correctly.
