@@ -49,11 +49,11 @@ class QuestBot(irc.IRCClient):
             log.msg(">%s< %s" % (user, msg))
             self.handle_query(user, msg)
             # Make sure we return asap
-            log.msg(">%s< answer returned." % (self.nickname))
+            log.debug(">%s< answer returned." % (self.nickname))
             return
 
         if channel in self.channel:
-            log.msg("%s <%s> %s" % (channel, user, msg))
+            log.debug("%s <%s> %s" % (channel, user, msg))
 
         # Otherwise check to see if it is a message directed at me
         if msg.startswith(self.nickname + ":"):
@@ -65,7 +65,7 @@ class QuestBot(irc.IRCClient):
     def action(self, user, channel, msg):
         """This will get called when the bot sees someone do an action."""
         user = user.split('!', 1)[0]
-        log.msg("* %s %s" % (user, msg))
+        log.debug("* %s %s" % (user, msg))
 
     # irc commands
 
