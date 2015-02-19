@@ -11,7 +11,7 @@ class Quest:
 
     def create_user(self, username):
         # Remove operator signs
-        if username.index('@') == 0:
+        if '@' in username and username.index('@') == 0:
             username = username[1:]
         if username not in self.users:
             self.users[username] = QuestUser(username)
