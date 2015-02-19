@@ -2,6 +2,8 @@ import os.path
 import cPickle
 import logging
 
+logger = logging.getLogger(__name__)
+
 
 class Quest:
     def __init__(self):
@@ -25,14 +27,14 @@ class QuestUser:
         self.version = 1
         self.username = username
         if os.path.exists("archive/" + self.username + ".user"):
-            logging.info("User '%s' found in archive." % self.username)
+            logger.info("User '%s' found in archive." % self.username)
             self.load()
         else:
-            logging.info("User '%s' not found in archive." % self.username)
+            logger.info("User '%s' not found in archive." % self.username)
             self.save()
 
     def hibernate(self):
-        logging.info("User '%s' goes into hibernation." % (self.username))
+        logger.info("User '%s' goes into hibernation." % (self.username))
         self.save()
 
     def load(self):
@@ -40,8 +42,8 @@ class QuestUser:
             tmp_dict = cPickle.load(f)
 
         loaded_version = tmp_dict['version']
-        logging.info(" - Loaded userfile with data format version %i." %
-                     loaded_version)
+        logger.info(" - Loaded userfile with data format version %i." %
+                    loaded_version)
 
         self.__dict__.update(tmp_dict)
 
@@ -49,5 +51,5 @@ class QuestUser:
         with open('archive/' + self.username + '.user', 'wb') as f:
             cPickle.dump(self.__dict__, f, 2)
 
-        logging.info("Saved user file for '%s', data format version %i." %
-                     (self.username, self.version))
+        logger.info("Saved user file for '%s', data format version %i." %
+                    (self.username, self.version))
