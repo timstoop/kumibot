@@ -57,10 +57,10 @@ class QuestBot(irc.IRCClient):
 
         # Otherwise check to see if it is a message directed at me
         if msg.startswith(self.nickname + ":"):
-            log.msg("<%s> %s" % (user, msg))
+            log.msg("#%s <%s> %s" % (channel, user, msg))
             reply = "%s: I am a log bot" % user
             self.msg(channel, reply)
-            log.msg("<%s> %s" % (self.nickname, reply))
+            log.msg("#%s <%s> %s" % (channel, self.nickname, reply))
 
     def action(self, user, channel, msg):
         """This will get called when the bot sees someone do an action."""
