@@ -49,23 +49,21 @@ class QuestBot(irc.IRCClient):
             log.msg(">%s< %s" % (user, msg))
             self.handle_query(user, msg)
             # Make sure we return asap
-            log.debug(">%s< answer returned." % (self.nickname))
+            log.msg(">%s< answer returned." % (self.nickname))
             return
 
         if channel in self.channel:
-            log.debug("%s <%s> %s" % (channel, user, msg))
+            log.msg("%s <%s> %s" % (channel, user, msg))
 
         # Otherwise check to see if it is a message directed at me
         if msg.startswith(self.nickname + ":"):
-            log.msg("#%s <%s> %s" % (channel, user, msg))
-            reply = "%s: I am a log bot" % user
-            self.msg(channel, reply)
-            log.msg("#%s <%s> %s" % (channel, self.nickname, reply))
+            log.msg("Public command received from %s in %s" % (user, channel))
+            self.handle_public_query(channel, user, msg)
 
     def action(self, user, channel, msg):
         """This will get called when the bot sees someone do an action."""
         user = user.split('!', 1)[0]
-        log.debug("* %s %s" % (user, msg))
+        log.msg("* %s %s" % (user, msg))
 
     # irc commands
 
@@ -134,11 +132,27 @@ class QuestBot(irc.IRCClient):
         else:
             self.msg(user, "Sorry, I don't get what you want. Try 'help'.")
 
+    def handle_public_query(self, channel, user, msg):
+        cmdarray = msg.split()
+        cmd = cmdarray[1]
+        assert cmdarray[0] == "%s:" % self.nickname
+
+        if hasattr(self, 'handle_pubcmd_%s' % cmd):
+            getattr(self, 'handle_pubcmd_%s' % cmd)(channel, user, msg)
+        # We do not handle misses here, since that could cause a lot of
+        # unneeded replies.
+
     def handle_cmd_help(self, user, msg):
         # Return helpful information
         with open('help/help.txt', 'r') as helpfile:
             for line in helpfile:
                 self.msg(user, line)
+
+    def handle_pubcmd_help(self, channel, user, msg):
+        # Return helpful information, but do it in a query
+        self.msg(channel, ("%s: That's a lot of information, sending it in a" +
+                 " query.") % user)
+        self.handle_cmd_help(user, '')
 
     # Helper functions
 
