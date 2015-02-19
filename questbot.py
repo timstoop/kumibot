@@ -8,15 +8,14 @@ from quest import Quest
 
 # system imports
 import time
-import sys
 import logging
+import argparse
 
 
 class QuestBot(irc.IRCClient):
     """An IRC bot that implements questing."""
-
-    nickname = "kumina"
     channel = {}
+    nickname = ''
 
     def connectionMade(self):
         irc.IRCClient.connectionMade(self)
@@ -170,12 +169,14 @@ class QuestBotFactory(protocol.ClientFactory):
     A new protocol instance will be created each time we connect to the server.
     """
 
-    def __init__(self, channel):
+    def __init__(self, channel, nick):
         self.channel = channel
+        self.nick = nick
 
     def buildProtocol(self, addr):
         p = QuestBot()
         p.factory = self
+        p.nickname = self.nick
         return p
 
     def clientConnectionLost(self, connector, reason):
@@ -188,10 +189,29 @@ class QuestBotFactory(protocol.ClientFactory):
 
 
 if __name__ == '__main__':
-    channel = sys.argv[1]
-    if channel[0] != '#':
-        channel = "#%s" % channel
-    logfile = sys.argv[2]
+    parser = argparse.ArgumentParser()
+    parser.add_argument("configfile", help="The configuration file to use.")
+    parser.add_argument('-s', '--server', help="The server to connect to.")
+    parser.add_argument('-c', '--channel', help="The channel to join.")
+    parser.add_argument('-n', '--nick', help="The nickname to use for the " +
+                        "bot.", default="QuestBot")
+    parser.add_argument('-l', '--logfile', help="The logfile to use for the " +
+                        "output.", default="out.log")
+    args = parser.parse_args()
+    # Parse the arguments
+    logfile = args.logfile
+    config = args.configfile
+
+    if args.channel:
+        if args.channel[0] != '#':
+            channel = "#%s" % args.channel
+        else:
+            channel = args.channel
+
+    if args.server:
+        server = args.server
+
+    nick = args.nick
     # initialize logging, we use the default logging module, but want to allow
     # twisted to write there as well. Found the solution on their own page:
     # http://twistedmatrix.com/documents/current/core/howto/logging.html
@@ -211,10 +231,10 @@ if __name__ == '__main__':
     logging.getLogger('').addHandler(console)
 
     # create factory protocol and application
-    f = QuestBotFactory(channel)
+    f = QuestBotFactory(channel, nick)
 
     # connect factory to this host and port
-    reactor.connectTCP("irc.kumina.nl", 6667, f)
+    reactor.connectTCP(server, 6667, f)
 
     # run bot
     reactor.run()
