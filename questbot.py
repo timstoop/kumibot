@@ -127,12 +127,18 @@ class QuestBot(irc.IRCClient):
             self.quest.create_user(user)
 
     def handle_query(self, user, msg):
-        if msg.startswith('help'):
-            with open('help/help.txt', 'r') as helpfile:
-                for line in helpfile:
-                    self.msg(user, line)
+        cmd = msg.split()[0]
+
+        if hasattr(self, 'handle_cmd_%s' % cmd):
+            getattr(self, 'handle_cmd_%s' % cmd)(user, msg)
         else:
             self.msg(user, "Sorry, I don't get what you want. Try 'help'.")
+
+    def handle_cmd_help(self, user, msg):
+        # Return helpful information
+        with open('help/help.txt', 'r') as helpfile:
+            for line in helpfile:
+                self.msg(user, line)
 
     # Helper functions
 
