@@ -18,6 +18,8 @@ class QuestBot(irc.IRCClient):
     channel = {}
     users = {}
     nickname = ''
+    admin_override = ''
+    admins = []
 
     def connectionMade(self):
         irc.IRCClient.connectionMade(self)
@@ -142,10 +144,11 @@ class QuestBot(irc.IRCClient):
         del self.users[nick]['whocallback']
 
         # If necessary, update the User object
-        if 'obj' in self.users[nick]:
-            self.users[nick]['obj'].update_hostmask(hostmask)
-        else:
+        if 'obj' not in self.users[nick]:
             self.users[nick]['obj'] = User(nick, hostmask)
+            if self.users[nick]['obj'].is_admin and (nick not in self.admins):
+                log.msg("User %s added as admin." % nick)
+                self.admins.append(nick)
 
     def irc_RPL_WHOISUSER(self, prefix, params):
         log.msg("Received response to whois on %s: %s" % (prefix, params))
@@ -203,7 +206,10 @@ class QuestBot(irc.IRCClient):
     def handle_query(self, user, msg):
         cmd = msg.split()[0]
 
-        if hasattr(self, 'handle_cmd_%s' % cmd):
+        if (((user == self.admin_override) or (user in self.admins))
+           and hasattr(self, 'handle_admincmd_%s' % cmd)):
+            getattr(self, 'handle_admincmd_%s' % cmd)(user, msg)
+        elif hasattr(self, 'handle_cmd_%s' % cmd):
             getattr(self, 'handle_cmd_%s' % cmd)(user, msg)
         else:
             self.msg(user, "Sorry, I don't get what you want. Try 'help'.")
@@ -218,6 +224,39 @@ class QuestBot(irc.IRCClient):
         # We do not handle misses here, since that could cause a lot of
         # unneeded replies.
 
+    ## ADMIN commands
+
+    def handle_admincmd_sume(self, user, msg):
+        # Does nothing interesting, used for testing.
+        self.msg(user, 'Yes, you are admin.')
+
+    def handle_admincmd_makeadmin(self, user, msg):
+        # This sets the admin flag for stored users.
+        nick = msg.split()[1]
+        if (nick in self.users) and ('obj' in self.users[nick]):
+            userobj = self.users[nick]['obj']
+            userobj.set_admin(True)
+            self.admins.append(nick)
+            self.msg(user, 'User %s has been made an admin.' % nick)
+            self.msg(userobj.currentNick, "You've been made an admin by %s!" %
+                     user)
+        else:
+            self.msg(user, 'User %s is not correctly registered (yet).' % nick)
+
+    def handle_admincmd_removeadmin(self, user, msg):
+        # This removes the admin flag from a stored user
+        nick = msg.split()[1]
+        if ((nick in self.users) and ('obj' in self.users[nick])
+           and (nick in self.admins)):
+            userobj = self.users[nick]['obj']
+            userobj.set_admin(False)
+            self.admins.remove(nick)
+            self.msg(user, 'Admin has been removed from user %s.' % nick)
+            self.msg(userobj.currentNick, "User %s has removed your admin!" %
+                     user)
+        else:
+            self.msg(user, 'User %s is not correctly registered (yet).' % nick)
+
     def handle_cmd_help(self, user, msg):
         # Return helpful information
         with open('help/help.txt', 'r') as helpfile:
@@ -229,7 +268,7 @@ class QuestBot(irc.IRCClient):
 
     def handle_cmd_debug(self, user, msg):
         # Using this to get to know IRC and Twisted's IRCClient
-        response1 = str(self.channel)
+        response1 = str(self.admins)
         response2 = str(self.users)
         self.msg(user, response1)
         self.msg(user, response2)

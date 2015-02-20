@@ -23,9 +23,16 @@ class UserList:
 
 
 class User:
+    version = 1
+    username = ''
+    currentNick = ''
+    is_admin = False
+
     def __init__(self, username, hostmask):
-        self.version = 1
         self.username = username
+        self.currentNick = username
+        self.version = self.version
+        self.is_admin = self.is_admin
         if os.path.exists("archive/" + self.username + ".user"):
             logger.info("User '%s' found in archive." % self.username)
             self.load()
@@ -45,7 +52,12 @@ class User:
         logger.info(" - Loaded userfile with data format version %i." %
                     loaded_version)
 
-        self.__dict__.update(tmp_dict)
+        for key in tmp_dict:
+            self.__dict__[key] = tmp_dict[key]
+
+        # Do some sanity checking
+        if self.currentNick == '':
+            self.currentNick = self.username
 
     def save(self):
         with open('archive/' + self.username + '.user', 'wb') as f:
@@ -54,9 +66,10 @@ class User:
         logger.info("Saved user file for '%s', data format version %i." %
                     (self.username, self.version))
 
-    def update_hostmask(self, hostmask):
-        # TODO
-        pass
+    def set_admin(self, admin):
+        self.is_admin = admin
+        self.save()
+        logger.info("User %s has been made an admin." % self.username)
 
     def _check_hostmask(self, hostmask):
         """We check if the found hostmask is a known hostmask."""
