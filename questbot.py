@@ -257,14 +257,17 @@ class QuestBot(irc.IRCClient):
         else:
             self.msg(user, 'User %s is not correctly registered (yet).' % nick)
 
+    def handle_admincmd_adminhelp(self, user, msg):
+        # Return helpful information
+        with open('help/adminhelp.txt', 'r') as helpfile:
+            for line in helpfile:
+                self.msg(user, line)
+
     def handle_cmd_help(self, user, msg):
         # Return helpful information
         with open('help/help.txt', 'r') as helpfile:
             for line in helpfile:
                 self.msg(user, line)
-
-    def handle_cmd_whoami(self, user, msg):
-        pass
 
     def handle_cmd_debug(self, user, msg):
         # Using this to get to know IRC and Twisted's IRCClient
