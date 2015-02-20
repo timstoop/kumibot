@@ -5,6 +5,7 @@ from twisted.python import log
 
 # local imports
 #from quest import Quest
+from users import User
 
 # system imports
 import time
@@ -15,6 +16,7 @@ import argparse
 class QuestBot(irc.IRCClient):
     """An IRC bot that implements questing."""
     channel = {}
+    users = {}
     nickname = ''
 
     def connectionMade(self):
@@ -36,8 +38,7 @@ class QuestBot(irc.IRCClient):
     def joined(self, channel):
         """This will get called when the bot joins the channel."""
         log.msg("[I have joined %s]" % channel)
-        #self.names(channel).addCallback(self._log_channel_users).addCallback(
-        #    self.init_quest, channel=channel)
+        self.names(channel)
 
     def privmsg(self, user, channel, msg):
         """This will get called when the bot receives a message."""
@@ -73,7 +74,17 @@ class QuestBot(irc.IRCClient):
             self.channel[channel] = {}
         self.channel[channel]['namecallback'] = d
         self.channel[channel]['users'] = []
+        log.msg("NAMES %s" % channel)
         self.sendLine("NAMES %s" % channel)
+        return d
+
+    def who(self, nick):
+        d = defer.Deferred()
+        if nick not in self.users:
+            self.users[nick] = {}
+        self.users[nick]['whocallback'] = d
+        log.msg("WHO %s" % nick)
+        self.sendLine("WHO %s" % nick)
         return d
 
     # irc callbacks
@@ -91,8 +102,15 @@ class QuestBot(irc.IRCClient):
         if channel not in self.channel:
             return
 
-        n = self.channel[channel]['users']
-        n += nicklist
+        self.channel[channel]['users'] = []
+
+        # Get the hostmask as well
+        for name in nicklist:
+            if name[0] == '@':
+                name = name[1:]
+            if (name not in self.users) and (name != self.username):
+                self.who(name)
+            self.channel[channel]['users'].append(name)
 
     def irc_RPL_ENDOFNAMES(self, prefix, params):
         channel = params[1].lower()
@@ -103,8 +121,31 @@ class QuestBot(irc.IRCClient):
 
         names = self.channel[channel]['users']
         self.channel[channel]['namecallback'].callback(names)
-
         del self.channel[channel]['namecallback']
+
+    def irc_RPL_WHOREPLY(self, prefix, params):
+        nick = params[5]
+        hostmask = params[2] + '@' + params[3]
+        if 'hostmask' in self.users[nick]:
+            assert hostmask == self.users[nick]['hostmask']
+        else:
+            self.users[nick]['hostmask'] = hostmask
+
+    def irc_RPL_ENDOFWHO(self, prefix, params):
+        nick = params[1]
+
+        if (nick not in self.users) or ('whocallback' not in self.users[nick]):
+            return
+
+        hostmask = self.users[nick]['hostmask']
+        self.users[nick]['whocallback'].callback(hostmask)
+        del self.users[nick]['whocallback']
+
+        # If necessary, update the User object
+        if 'obj' in self.users[nick]:
+            self.users[nick]['obj'].update_hostmask(hostmask)
+        else:
+            self.users[nick]['obj'] = User(nick, hostmask)
 
     def irc_RPL_WHOISUSER(self, prefix, params):
         log.msg("Received response to whois on %s: %s" % (prefix, params))
@@ -152,6 +193,13 @@ class QuestBot(irc.IRCClient):
                 continue
             self.quest.create_user(user)"""
 
+    def init_users(self, users, channel):
+        # Add users to a known channel, check if we know them.
+        for user in users:
+            if user == self.nickname or user == ("@%s" % (self.nickname)):
+                continue
+            self.users.create_user(user)
+
     def handle_query(self, user, msg):
         cmd = msg.split()[0]
 
@@ -179,6 +227,13 @@ class QuestBot(irc.IRCClient):
     def handle_cmd_whoami(self, user, msg):
         pass
 
+    def handle_cmd_debug(self, user, msg):
+        # Using this to get to know IRC and Twisted's IRCClient
+        response1 = str(self.channel)
+        response2 = str(self.users)
+        self.msg(user, response1)
+        self.msg(user, response2)
+
     def handle_pubcmd_help(self, channel, user, msg):
         # Return helpful information, but do it in a query
         self.msg(channel, ("%s: That's a lot of information, sending it in a" +
@@ -201,14 +256,16 @@ class QuestBotFactory(protocol.ClientFactory):
     A new protocol instance will be created each time we connect to the server.
     """
 
-    def __init__(self, channel, nick):
+    def __init__(self, channel, nick, admin=None):
         self.channel = channel
         self.nick = nick
+        self.admin = admin
 
     def buildProtocol(self, addr):
         p = QuestBot()
         p.factory = self
         p.nickname = self.nick
+        p.admin_override = self.admin
         return p
 
     def clientConnectionLost(self, connector, reason):
@@ -229,6 +286,8 @@ if __name__ == '__main__':
                         "bot.", default="QuestBot")
     parser.add_argument('-l', '--logfile', help="The logfile to use for the " +
                         "output.", default="out.log")
+    parser.add_argument('-a', '--admin', help="The nickname for an admin, " +
+                        "overrides old settings or used for new deploys.")
     args = parser.parse_args()
     # Parse the arguments
     logfile = args.logfile
@@ -242,6 +301,11 @@ if __name__ == '__main__':
 
     if args.server:
         server = args.server
+
+    if args.admin:
+        admin = args.admin
+    else:
+        admin = None
 
     nick = args.nick
     # initialize logging, we use the default logging module, but want to allow
@@ -263,7 +327,7 @@ if __name__ == '__main__':
     logging.getLogger('').addHandler(console)
 
     # create factory protocol and application
-    f = QuestBotFactory(channel, nick)
+    f = QuestBotFactory(channel, nick, admin)
 
     # connect factory to this host and port
     reactor.connectTCP(server, 6667, f)
