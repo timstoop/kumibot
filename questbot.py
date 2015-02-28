@@ -201,11 +201,13 @@ class QuestBot(irc.IRCClient):
 
     def userJoined(self, user, channel):
         log.msg("User '%s' joined channel '%s'." % (user, channel))
-        self.quest.create_user(user)
+        self.who(user)
 
     def userLeft(self, user, channel):
         log.msg("User '%s' left channel '%s'." % (user, channel))
-        self.quest.hibernate_user(user)
+        if 'obj' in self.users[user]:
+            self.users[user]['obj'].save()
+            del self.users[user]['obj']
 
     # Bot functionality
 
