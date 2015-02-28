@@ -56,19 +56,14 @@ class User:
                     loaded_version)
 
         for key in tmp_dict:
-            self.__dict__[key] = tmp_dict[key]
+            if key in User.__dict__:
+                self.__dict__[key] = tmp_dict[key]
 
         # Do some sanity checking
         if self.currentNick == '':
             self.currentNick = self.username
 
     def save(self):
-        # We only save when we're registered.
-        if not self.is_registered():
-            logger.info("Not saving file for '%s', not registered." %
-                        self.username)
-            return
-        # Otherwise, save.
         # First collect all class variables:
         data = {}
         for key in User.__dict__.keys():
@@ -76,13 +71,6 @@ class User:
             # Drop methods.
             if type(data[key]) == type(self.save):
                 del data[key]
-        # Make sure we keep locally or externally added stuff
-        for key in self.__dict__.keys():
-            if key not in data:
-                data[key] = getattr(self, key)
-                # Drop methods.
-                if type(data[key]) == type(self.save):
-                    del data[key]
 
         # Save it.
         with open('archive/' + self.username + '.user', 'wb') as f:

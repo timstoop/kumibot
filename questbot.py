@@ -165,7 +165,8 @@ class QuestBot(irc.IRCClient):
                             ", I've automagically logged you in!") %
                      self.users[nick]['obj'].username)
             # If you're an admin, register that as well.
-            if self.users[nick]['obj'].is_admin and (nick not in self.admins):
+            if self.users[nick]['obj'].is_admin or (nick in
+                                                    self.admin_override):
                 log.msg("User %s added as admin." % nick)
                 self.admins.append(nick)
 
