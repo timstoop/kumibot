@@ -289,10 +289,8 @@ class QuestBot(irc.IRCClient):
 
     def handle_cmd_debug(self, user, msg):
         # Using this to get to know IRC and Twisted's IRCClient
-        response1 = str(self.admins)
-        response2 = str(self.users)
+        response1 = str(self.users[user]['obj'].hostmasks)
         self.msg(user, response1)
-        self.msg(user, response2)
 
     def handle_cmd_register(self, user, msg):
         # Usage: register <nick> <password>
@@ -369,7 +367,6 @@ class QuestBot(irc.IRCClient):
         # Compare hashes
         if userobj.pwhash == pwd:
             userobj.add_hostmask(self.users[nick]['hostmask'])
-            userobj.save()
             self.users[nick]['obj'] = userobj
             self.msg(user, "Password recognised. You've been logged in and " +
                      "your hostmask has been added to the known list.")
@@ -381,6 +378,13 @@ class QuestBot(irc.IRCClient):
                      penalty)
             not_allowed_before = now + penalty_delta
             self.users[nick]['badpass'] = not_allowed_before
+
+    def handle_cmd_saveself(self, user, msg):
+        if 'obj' in self.users[user]:
+            self.users[user]['obj'].save()
+            self.msg(user, 'Profile saved.')
+        else:
+            self.msg(user, 'You are not logged in.')
 
     def handle_pubcmd_help(self, channel, user, msg):
         # Return helpful information, but do it in a query
