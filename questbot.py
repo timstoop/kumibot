@@ -226,8 +226,8 @@ class QuestBot(irc.IRCClient):
     def handle_query(self, user, msg):
         cmd = msg.split()[0]
 
-        if (((user == self.admin_override) or (user in self.admins))
-           and hasattr(self, 'handle_admincmd_%s' % cmd)):
+        if ((user in self.admins) and
+           hasattr(self, 'handle_admincmd_%s' % cmd)):
             getattr(self, 'handle_admincmd_%s' % cmd)(user, msg)
         elif hasattr(self, 'handle_cmd_%s' % cmd):
             getattr(self, 'handle_cmd_%s' % cmd)(user, msg)
