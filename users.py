@@ -33,13 +33,11 @@ class User:
     def __init__(self, username, hostmask=None):
         self.username = str(username)
         self.currentNick = str(username)
-        self.version = self.version
-        self.is_admin = self.is_admin
         self.current_hostmask = hostmask
         if os.path.exists("archive/" + self.username + ".user"):
             logger.info("User '%s' found in archive." % self.username)
             self.load()
-            if hostmask:
+            if hostmask is not None:
                 self._check_hostmask(hostmask)
         else:
             logger.info("User '%s' not found in archive." % self.username)
@@ -71,8 +69,25 @@ class User:
                         self.username)
             return
         # Otherwise, save.
+        # First collect all class variables:
+        data = {}
+        for key in User.__dict__.keys():
+            data[key] = getattr(self, key)
+            # Drop methods.
+            if type(data[key]) == type(self.save):
+                del data[key]
+        # Make sure we keep locally or externally added stuff
+        for key in self.__dict__.keys():
+            if key not in data:
+                data[key] = getattr(self, key)
+                # Drop methods.
+                if type(data[key]) == type(self.save):
+                    del data[key]
+
+        # Save it.
         with open('archive/' + self.username + '.user', 'wb') as f:
-            cPickle.dump(self.__dict__, f, 2)
+            cPickle.dump(data, f, 2)
+            logger.info("Save data: %s" % data.keys)
 
         logger.info("Saved user file for '%s', data format version %i." %
                     (self.username, self.version))
@@ -81,6 +96,7 @@ class User:
         self.hostmasks.append(hostmask)
         logger.info("Add hostmask '%s' to known hostmasks for user '%s'." %
                     (hostmask, self.username))
+        self.save()
 
     def set_admin(self, admin):
         self.is_admin = admin
@@ -106,6 +122,8 @@ class User:
     def _check_hostmask(self, hostmask):
         """We check if the found hostmask is a known hostmask."""
         if hostmask not in self.hostmasks:
+            logger.info("Hostmask %s is not known for user %s." %
+                        (hostmask, self.username))
             raise UnknownHostmaskException(("Hostmask %s is not known for " +
                                            "user %s.") % (hostmask,
                                                           self.username))
