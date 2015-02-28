@@ -14,6 +14,7 @@ import logging
 import argparse
 import hashlib
 import datetime
+import functools
 
 
 class QuestBot(irc.IRCClient):
@@ -23,6 +24,26 @@ class QuestBot(irc.IRCClient):
     nickname = ''
     admin_override = ''
     admins = []
+
+    # DECORATORS
+
+    def loggedIn(f):
+        @functools.wraps(f)
+        def _decorator(*args, **kwargs):
+            s = args[0]  # 'self'
+            nick = args[1]
+            if nick in s.users:
+                # We have a user, for sure
+                if 'obj' in s.users[nick]:
+                    # All is fine, continue.
+                    f(*args, **kwargs)
+                else:
+                    s.msg(nick, 'Sorry, you need to be logged in for this to' +
+                          ' work.')
+            else:
+                # We're not sure, just do it.
+                f(*args, **kwargs)
+        return _decorator
 
     def connectionMade(self):
         irc.IRCClient.connectionMade(self)
@@ -248,6 +269,7 @@ class QuestBot(irc.IRCClient):
 
     ## ADMIN commands
 
+    @loggedIn
     def handle_admincmd_sume(self, user, msg):
         # Does nothing interesting, used for testing.
         self.msg(user, 'Yes, you are admin.')
