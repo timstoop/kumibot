@@ -5,12 +5,15 @@ from twisted.python import log
 
 # local imports
 #from quest import Quest
-from users import User
+from users import (User, AccountAlreadyCreatedException,
+                   UnknownHostmaskException)
 
 # system imports
 import time
 import logging
 import argparse
+import hashlib
+import datetime
 
 
 class QuestBot(irc.IRCClient):
@@ -145,7 +148,22 @@ class QuestBot(irc.IRCClient):
 
         # If necessary, update the User object
         if 'obj' not in self.users[nick]:
-            self.users[nick]['obj'] = User(nick, hostmask)
+            try:
+                self.users[nick]['obj'] = User(nick, hostmask)
+            except UnknownHostmaskException:
+                log.msg("User with nickname '%s' has no matching hostmask." %
+                        nick)
+                self.msg(nick, "The username you've chosen is already " +
+                         "registered to another hostmask. Please choose " +
+                         "another name or login.")
+                return
+            # We've recognised the user, let them know! But only if they've
+            # registered.
+            if self.users[nick]['obj'].is_registered():
+                self.msg(nick, ("Hi %s, I recognise you from earlier " +
+                         "connections, I've automagically logged you in!") %
+                         nick)
+            # If you're an admin, register that as well.
             if self.users[nick]['obj'].is_admin and (nick not in self.admins):
                 log.msg("User %s added as admin." % nick)
                 self.admins.append(nick)
@@ -275,6 +293,94 @@ class QuestBot(irc.IRCClient):
         response2 = str(self.users)
         self.msg(user, response1)
         self.msg(user, response2)
+
+    def handle_cmd_register(self, user, msg):
+        # Usage: register <nick> <password>
+        try:
+            tmpmsg = msg.split()
+            nick = tmpmsg[1]
+            password = tmpmsg[2]
+        except IndexError:
+            self.msg(user, 'Usage: register <nick> <password>')
+            self.msg(user, 'You can only register yourself, however, so the ' +
+                     '<nick> in that command should always be "%s".' % user)
+            return
+
+        # Make sure you are who you say you are
+        if user != nick:
+            self.msg(user, 'You can only register yourself, %s.' % user)
+            return
+
+        # Hash the password
+        pwd = hashlib.sha256(password).digest()
+
+        # Check if we have a user object and if not, error
+        if 'obj' not in self.users[nick]:
+            self.msg(user, 'Please wait a few seconds and try again, the ' +
+                     'bot is still getting to know you!')
+            return
+
+        userobj = self.users[nick]['obj']
+        # Set the password hash, if none is set
+        try:
+            userobj.set_pw_hash(pwd, replace=False)
+        except AccountAlreadyCreatedException:
+            self.msg(user, 'Your account is already set or someone else is ' +
+                     'using this nickname already.')
+            return
+        else:
+            self.msg(user, 'Password set, please try to login now.')
+
+    def handle_cmd_login(self, user, msg):
+        # Usage: login <nick> <password>
+        try:
+            tmpmsg = msg.split()
+            nick = tmpmsg[1]
+            password = tmpmsg[2]
+        except IndexError:
+            self.msg(user, 'Usage: login <nick> <password>')
+            return
+
+        # Number of seconds to delay next login attempt on bad password
+        penalty = 20
+        penalty_delta = datetime.timedelta(seconds=20)
+        # Current timestamp
+        now = datetime.datetime.now()
+
+        # Check if last attempt is more than penalty seconds ago
+        if 'badpass' in self.users[nick]:
+            if self.users[nick]['badpass'] >= now:
+                self.msg(user, ("You're trying too often to log in! Added %i" +
+                                " seconds again.") % penalty)
+                log.msg("User '%s' is trying to log in too fast for '%s'." %
+                        (user, nick))
+                self.users[nick]['badpass'] += penalty_delta
+                return
+
+        # Hash the password
+        pwd = hashlib.sha256(password).digest()
+
+        # Check if we have a user object, because then you're already logged in
+        if 'obj' in self.users[nick]:
+            self.msg(user, 'You are already logged in!')
+            return
+
+        userobj = User(nick)
+        # Compare hashes
+        if userobj.pwhash == pwd:
+            userobj.add_hostmask(self.users[nick]['hostmask'])
+            userobj.save()
+            self.users[nick]['obj'] = userobj
+            self.msg(user, "Password recognised. You've been logged in and " +
+                     "your hostmask has been added to the known list.")
+            log.msg("User '%s' has succesfully logged in as '%s'." % (user,
+                                                                      nick))
+        else:
+            log.msg("Bad password entered for '%s' by '%s'." % (nick, user))
+            self.msg(user, 'Password not known. Try again in %i seconds.' %
+                     penalty)
+            not_allowed_before = now + penalty_delta
+            self.users[nick]['badpass'] = not_allowed_before
 
     def handle_pubcmd_help(self, channel, user, msg):
         # Return helpful information, but do it in a query
