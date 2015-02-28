@@ -112,13 +112,6 @@ class User:
             self.hostmasks.append(self.current_hostmask)
             self.save()
 
-    def is_registered(self):
-        # Nothing too fancy yet, only check if a password hash is set.
-        if hasattr(self, 'pwhash') and self.pwhash is not None:
-            return True
-        else:
-            return False
-
     def _check_hostmask(self, hostmask):
         """We check if the found hostmask is a known hostmask."""
         if hostmask not in self.hostmasks:

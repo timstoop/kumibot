@@ -150,6 +150,8 @@ class QuestBot(irc.IRCClient):
         if 'obj' not in self.users[nick]:
             try:
                 self.users[nick]['obj'] = User(nick, hostmask)
+                log.msg("User with nickname '%s' recognised as '%s'." %
+                        (nick, self.users[nick]['obj'].username))
             except UnknownHostmaskException:
                 log.msg("User with nickname '%s' has no matching hostmask." %
                         nick)
@@ -159,10 +161,9 @@ class QuestBot(irc.IRCClient):
                 return
             # We've recognised the user, let them know! But only if they've
             # registered.
-            if self.users[nick]['obj'].is_registered():
-                self.msg(nick, ("Hi %s, I recognise you from earlier " +
-                         "connections, I've automagically logged you in!") %
-                         nick)
+            self.msg(nick, ("Hi %s, I recognise you from earlier connections" +
+                            ", I've automagically logged you in!") %
+                     self.users[nick]['obj'].username)
             # If you're an admin, register that as well.
             if self.users[nick]['obj'].is_admin and (nick not in self.admins):
                 log.msg("User %s added as admin." % nick)
