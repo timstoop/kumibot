@@ -1,13 +1,18 @@
-Hi, I'm a bot. But I guess you already knew that.
+.Hi, I'm a bot. But I guess you already knew that.
 .
-Currently, there's not really a lot I can do, but I'm being expanded! I'll be able to do some
-useful stuff before long!
+.Currently, there's not really a lot I can do, but I'm being expanded! I'll be able to do some
+.useful stuff before long!
 .
-Known commands in channels:
-- help, show this help text
+.Known commands in channels:
+.- help, show this help text
 .
-Known commands in query:
-- help, show this help text
+.Known commands in query:
+.- help, show this help text
+.- register, register yourself with me
+.- login, when you're registered, login
+.- saveself, save your profile (generally not needed, done automatically)
 .
-If you are an admin, you can use 'adminhelp' in a query to get information regarding admin
-commands.
+.If you're unsure how to use a command, simply message it to me and I'll explain.
+.
+.If you are an admin, you can use 'adminhelp' in a query to get information regarding admin
+.commands.

@@ -1,12 +1,12 @@
-Hail to thee, o pizza cat!
+.Hail to thee, o pizza cat!
 .
-Currently, there's not really a lot I can do, but I'm being expanded! I'll be able to do some
-useful stuff before long!
+.Currently, there's not really a lot I can do, but I'm being expanded! I'll be able to do some
+.useful stuff before long!
 .
-Known commands in channels:
-- none yet
+.Known commands in channels:
+.- none yet
 .
-Known commands in query:
-- adminhelp, show this help text
-- makeadmin <user>, make <user> an admin
-- removeadmin <user>, remove admin status from <user>
+.Known commands in query:
+.- adminhelp, show this help text
+.- makeadmin <user>, make <user> an admin
+.- removeadmin <user>, remove admin status from <user>
