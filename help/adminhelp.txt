@@ -10,3 +10,4 @@
 .- adminhelp, show this help text
 .- makeadmin <user>, make <user> an admin
 .- removeadmin <user>, remove admin status from <user>
+.- sume, shows whether you're admin or not
